@@ -1,6 +1,8 @@
 Config = {
-	-- Quem pode usar o /fotocarro (vRP.HasGroup(passaporte, Group, Level)).
-	Permission = { Group = "Admin", Level = 1 },
+	-- "auto", "vrp" ou "standalone". No modo auto, vRP iniciado tem prioridade.
+	Framework = "auto",
+
+	Permission = { Group = "Admin", Level = 1, Ace = "rvt_carfoto.use" },
 
 	Command = "fotocarro",
 

@@ -8,8 +8,16 @@ local ANGLES = {
 }
 
 local function notify(color, text)
-	TriggerEvent("Notify", "Foto de carro", text, color, 6000)
+	if Config.Framework ~= "standalone" and GetResourceState("vrp") == "started" then
+		TriggerEvent("Notify", "Foto de carro", text, color, 6000)
+	else
+		BeginTextCommandThefeedPost("STRING")
+		AddTextComponentSubstringPlayerName("Foto de carro: " .. text)
+		EndTextCommandThefeedPostTicker(false, false)
+	end
 end
+
+RegisterNetEvent("rvt_carfoto:notify", notify)
 
 local function loadModel(hash)
 	if not IsModelInCdimage(hash) or not IsModelAVehicle(hash) then return false end

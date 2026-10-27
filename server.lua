@@ -1,5 +1,36 @@
-local Proxy = module("vrp", "lib/Proxy")
-local vRP = Proxy.getInterface("vRP")
+local vRP
+local vrpError
+
+local function framework()
+	if Config.Framework == "standalone" then return "standalone" end
+	if GetResourceState("vrp") ~= "started" then
+		vRP = nil
+		return Config.Framework == "vrp" and "unavailable" or "standalone"
+	end
+	if not vRP then
+		local ok, result = pcall(function()
+			local utils = assert(LoadResourceFile("vrp", "lib/Utils.lua"), "vrp/lib/Utils.lua indisponível")
+			local environment = setmetatable({}, { __index = _G })
+			environment.load = function(chunk, name, mode, scope)
+				return load(chunk, name, mode, scope or environment)
+			end
+			assert(load(utils, "@@vrp/lib/Utils.lua", "t", environment))()
+			return assert(environment.module("vrp", "lib/Proxy").getInterface("vRP"), "interface vRP indisponível")
+		end)
+		if not ok then
+			if vrpError ~= tostring(result) then print("[rvt_carfoto] falha ao carregar vRP: " .. tostring(result)) end
+			vrpError = tostring(result)
+			return "unavailable"
+		end
+		vRP = result
+		vrpError = nil
+	end
+	return "vrp"
+end
+
+AddEventHandler("onResourceStop", function(resource)
+	if resource == "vrp" then vRP = nil end
+end)
 
 local RESOURCE = GetCurrentResourceName()
 local PNG_SIGNATURE = "\137PNG\r\n\26\n"
@@ -33,13 +64,19 @@ local function base64Decode(input)
 end
 
 local function permitted(source)
-	local passport = vRP.Passport(source)
 	local p = Config.Permission or {}
-	return passport and vRP.HasGroup(passport, p.Group or "Admin", p.Level) and true or false
+	local mode = framework()
+	if mode == "standalone" then return IsPlayerAceAllowed(source, p.Ace or "rvt_carfoto.use") end
+	if mode ~= "vrp" then return false end
+	local ok, result = pcall(function()
+		local passport = vRP.Passport(source)
+		return passport and vRP.HasGroup(passport, p.Group or "Admin", p.Level) and true or false
+	end)
+	return ok and result == true
 end
 
 local function notify(source, color, text)
-	TriggerClientEvent("Notify", source, "Foto de carro", text, color, 8000)
+	TriggerClientEvent("rvt_carfoto:notify", source, color, text)
 end
 
 RegisterCommand(Config.Command or "fotocarro", function(source, args)
@@ -79,7 +116,7 @@ RegisterNetEvent("rvt_carfoto:save", function(spawn, pngBase64)
 		print(("[rvt_carfoto] não foi possível gravar %s"):format(file))
 		return notify(source, "vermelho", spawn .. ": não foi possível gravar o arquivo.")
 	end
-	print(("[rvt_carfoto] foto salva: %s/%s (%d KB) pelo passaporte %s"):format(GetResourcePath(RESOURCE), file, math.floor(#bytes / 1024), tostring(vRP.Passport(source))))
+	print(("[rvt_carfoto] foto salva: %s/%s (%d KB) pelo jogador %s"):format(GetResourcePath(RESOURCE), file, math.floor(#bytes / 1024), source))
 	notify(source, "verde", ("%s salvo em %s/%s"):format(spawn, RESOURCE, file))
 end)
 

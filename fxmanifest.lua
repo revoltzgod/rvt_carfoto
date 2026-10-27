@@ -6,14 +6,14 @@ author "RVT Scripts | Revoltz"
 contact "Discord: Revoltz"
 website "https://rvtscripts.com"
 description "Fotografia de veículos com recorte de fundo e exportação em PNG para FiveM."
-version "1.0.0"
+version "1.1.0"
 
-dependencies { "vrp", "screenshot-basic" }
+dependency "screenshot-basic"
 
 ui_page "ui/index.html"
 
 shared_script "config.lua"
 client_script "client.lua"
-server_scripts { "@vrp/lib/Utils.lua", "server.lua" }
+server_script "server.lua"
 
 files { "ui/index.html" }
